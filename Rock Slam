@@ -22,7 +22,9 @@ local Counter = 0
 local MaxForce = 5
 
 local Animations = Character.Animations
+local Sounds = Character.Sounds
 
+local SlamSound = Sounds.Slam
 local SmashAnimation = Humanoid.Animator:LoadAnimation(Animations.Smash)
 
 local RockParts: {BasePart} = {}
@@ -31,10 +33,17 @@ local Amount = 28
 local Radius = 10
 local LifeTime = 2
 
+local CC = workspace.CurrentCamera
+local CameraShaker = require(Modules.CameraShaker)
+
+local CamShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(ShakeCFrame)
+	CC.CFrame = CC.CFrame * ShakeCFrame
+end)
+
 local function XZAxis(Angle: number, Counter: number)
 	local x = math.cos(Angle) * Radius * Counter
 	local z = math.sin(Angle) * Radius * Counter
-	
+
 	return x, z
 end
 
@@ -50,33 +59,41 @@ local ClientDebounce = false
 
 UIS.InputBegan:Connect(function(UserInput, GPE)
 	if GPE then return end
-	
+
 	if UserInput.KeyCode == Enum.KeyCode.E then
 		if ClientDebounce then return end
 		ClientDebounce = true
-		
+
 		Humanoid.AutoRotate = false
 		Humanoid.WalkSpeed = 0
 		Humanoid.JumpHeight = 0
-		
+
 		SmashAnimation:Play()
 		SmashAnimation:AdjustSpeed(0.01)
-		
+
 		local Charge = Effects.Charge:Clone()
 		Charge.Parent = HumanoidRootPart
-		
-		repeat task.wait(0.05)
+
+		repeat task.wait(0.025)
 			Counter += 0.1
 		until not UIS:IsKeyDown(Enum.KeyCode.E) or Counter >= MaxForce
 		SmashAnimation:AdjustSpeed(1.25)
 		Charge:Destroy()
-	
-		if Counter <= 1 then ClientDebounce = false return end
+
+		if Counter <= 1 then
+			ClientDebounce = false
+
+			Humanoid.AutoRotate = true
+			Humanoid.WalkSpeed = 16
+			Humanoid.JumpHeight = 7.2
+			
+			return
+		end
 
 		Replicate:FireServer({SkillType = "Smash", Force = Counter})
-		
+		print(Counter)
 		Counter = 0
-		
+
 		task.wait(3)
 		ClientDebounce = false
 	end
@@ -85,7 +102,7 @@ end)
 Replicate.OnClientEvent:Connect(function(Skill)
 	if Skill.SkillType == "Smash" then
 		local GroundAtt: Attachment = Effects.Ground.GroundAtt:Clone()
-		
+
 		task.spawn(function()
 			for _ = 1,8 + Skill.Force do
 				local FlyingRock = Effects.FlyingRock:Clone()
@@ -96,21 +113,21 @@ Replicate.OnClientEvent:Connect(function(Skill)
 				FlyingRock.Orientation = Vector3.new(math.random(-45, 45), 0, math.random(-45, 45))
 				FlyingRock.BrickColor = workspace.Debris:WaitForChild("Rocks").BrickColor
 				FlyingRock.Material = workspace.Debris.Rocks.Material
-				
+
 				FlyingRock.Parent = workspace.Debris
-				
+
 				local BV = Instance.new("BodyVelocity")
 				BV.MaxForce = Vector3.new(1,1,1) * math.huge
-				
-				BV.Velocity = HumanoidRootPart.CFrame.UpVector * 40 + Vector3.new(math.random(-25, 25), 0, math.random(-25, 25)) * Skill.Force
+
+				BV.Velocity = HumanoidRootPart.CFrame.UpVector * 40 + Vector3.new(math.random(-25, 25), 5, math.random(-25, 25)) * Skill.Force
 				BV.Parent = FlyingRock
-				
+
 				task.delay(0.05, function()
 					FlyingRock.CanCollide = true
 				end)
-				
+
 				local Debounce: {boolean} = {}
-				
+
 				local Connection Connection = FlyingRock.Touched:Connect(function(Hit: Instance)
 					if Hit:IsDescendantOf(workspace) and Hit.Parent ~= Character and Hit.Parent ~= workspace.Debris and Hit.Name == "Baseplate" then
 						if Debounce[FlyingRock] ~= nil then return end
@@ -118,58 +135,76 @@ Replicate.OnClientEvent:Connect(function(Skill)
 						FlyingRock.Dust:Emit(FlyingRock.Dust:GetAttribute("EmitCount") * Skill.Force)	
 					end
 				end)
-				
+
 				Debris:AddItem(BV, 0.1)
 				Debris:AddItem(FlyingRock, 1.5)
-				
+
 				FlyingRock.Destroying:Once(function()
 					table.clear(Debounce)
 					Connection:Disconnect()
 				end)	
 			end
 		end)
+
+		CamShake:Start()
+		CamShake:ShakeOnce(17.5, 15, 0.1, 0.75)
 		
+		SlamSound.Volume = 0 + Skill.Force / 3
+		SlamSound:Play()
+
+		local Shockwave_1, Shockwave_2 = Effects.Shockwave_1:Clone(), Effects.Shockwave_2:Clone()
+		
+		Shockwave_1.CFrame, Shockwave_2.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, - 3, 0), HumanoidRootPart.CFrame * CFrame.new(0, - 3, 0)
+		Shockwave_1.Parent, Shockwave_2.Parent = HumanoidRootPart, HumanoidRootPart
+
+		TS:Create(Shockwave_1, TweenInfo.new(0.5), {Transparency = 1}):Play()
+		TS:Create(Shockwave_2, TweenInfo.new(0.5), {Transparency = 1}):Play()
+		
+		task.delay(0.5, function()
+			Shockwave_1:Destroy() Shockwave_2:Destroy()
+		end)
+
 		for x = 1, Amount do
 			local Angle = x * (2 * math.pi / Amount)
 			local X,Z = XZAxis(Angle, Skill.Force)
-			
+
 			local Rocks = Effects.Rocks:Clone()
 			Rocks.CFrame = HumanoidRootPart.CFrame * CFrame.new(x%2 == 0 and X or X / 2, 0, x%2 == 0 and Z or Z / 2)
 			Rocks.Parent = workspace.Debris
-			
+
 			local RC = workspace:Raycast(Rocks.CFrame.Position, Rocks.CFrame.UpVector * - 10, RCP)
-			
+
 			if RC then
 				if not HumanoidRootPart:FindFirstChild("GroundAtt") then
 					GroundAtt.Parent = HumanoidRootPart
 				end
-				
+
 				Rocks.Position -= Vector3.new(0, 4, 0)
 
 				Rocks.BrickColor = RC.Instance.BrickColor
 				Rocks.Material = RC.Instance.Material
-				
+
 				Rocks.CFrame = CFrame.new(Rocks.Position, HumanoidRootPart.Position)
-				
+
 				local T1 = TS:Create(Rocks, TweenInfo.new(0.1), {
 					Position = Rocks.Position + Vector3.new(0, 1, 0),
 					Transparency = 0,
 					Size = Vector3.new(Random.new():NextNumber(2, 3), Random.new():NextNumber(1.5, 2), Random.new():NextNumber(2, 3))
 				})
-				
+
 				T1:Play()
-				
+
 				local Debounce: {boolean} = {}
-				
+
 				for _,v in GroundAtt:GetChildren() do
 					if v:IsA("ParticleEmitter") then
 						if Debounce[v] == true then return end
 						Debounce[v] = true
-						
+
 						v:Emit(v:GetAttribute("EmitCount") / 30 * Skill.Force)
 					end
 				end
-				
+
 				T1.Completed:Once(function()
 					task.delay(LifeTime, function()
 						TS:Create(Rocks, TweenInfo.new(0.85), {
@@ -182,7 +217,7 @@ Replicate.OnClientEvent:Connect(function(Skill)
 
 				Debris:AddItem(Rocks, 2)
 				Debris:AddItem(GroundAtt, 2)
-				
+
 				if x == Amount then
 					Main:FireServer({SkillType = "Smash", Force = Skill.Force, Radius = X * 2})
 				end
