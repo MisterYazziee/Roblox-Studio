@@ -252,7 +252,8 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 					if Hits[v.Parent.Name] == nil then 
 						Hits[v.Parent.Name] = true
 						
-						local E_Humanoid, E_HRP = v.Parent.Humanoid, v.Parent.HumanoidRootPart
+						local Enemy = v.Parent
+						local E_Humanoid, E_HRP = Enemy.Humanoid, Enemy.HumanoidRootPart
 						
 						v.Parent.Humanoid:TakeDamage(SmashDamage)
 						
@@ -268,7 +269,23 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 						
 						local Stunned = Instance.new("BoolValue", E_HRP.Parent)
 						Stunned.Name = "Stunned"
-						Debris:AddItem(Stunned, 3)
+						Debris:AddItem(Stunned, 1 * Skill.Force)
+						
+						Enemy.ChildAdded:Once(function(Object)
+							if Object.Name == "Stunned" then
+								E_Humanoid.AutoRotate = false
+								E_Humanoid.WalkSpeed = 0
+								E_Humanoid.JumpHeight = 0
+							end
+						end)
+						
+						Enemy.ChildRemoved:Once(function(Object)
+							if Object.Name == "Stunned" then
+								E_Humanoid.AutoRotate = true
+								E_Humanoid.WalkSpeed = 16
+								E_Humanoid.JumpHeight = 7.2
+							end
+						end)
 					end
 				end
 			end
