@@ -169,7 +169,7 @@ Replicate.OnClientEvent:Connect(function(Skill)
 			local X,Z = XZAxis(Angle, Skill.Force)
 
 			local Rocks = Effects.Rocks:Clone()
-			Rocks.CFrame = HumanoidRootPart.CFrame * CFrame.new(x%2 == 0 and X or X / 2, 0, x%2 == 0 and Z or Z / 2)
+			Rocks.CFrame = HumanoidRootPart.CFrame * CFrame.new(x%2 == 0 and X or X / 1.75, 0, x%2 == 0 and Z or Z / 1.75)
 			Rocks.Parent = workspace.Debris
 
 			local RC = workspace:Raycast(Rocks.CFrame.Position, Rocks.CFrame.UpVector * - 10, RCP)
@@ -187,9 +187,10 @@ Replicate.OnClientEvent:Connect(function(Skill)
 				Rocks.CFrame = CFrame.new(Rocks.Position, HumanoidRootPart.Position)
 
 				local T1 = TS:Create(Rocks, TweenInfo.new(0.1), {
-					Position = Rocks.Position + Vector3.new(0, 1, 0),
+					Position = Rocks.Position + Vector3.new(0, Random.new():NextNumber(0.35, 1), 0),
 					Transparency = 0,
-					Size = Vector3.new(Random.new():NextNumber(2, 3), Random.new():NextNumber(1.5, 2), Random.new():NextNumber(2, 3))
+					Size = Vector3.new(Random.new():NextNumber(3, 3), Random.new():NextNumber(1.5, 2), Random.new():NextNumber(2, 3)),
+					["CFrame"] = Rocks.CFrame * CFrame.Angles(math.rad(math.random(-5, 5)), math.rad(math.random(-3.5, 3.5)), math.rad(-5, 5))
 				})
 
 				T1:Play()
@@ -212,10 +213,11 @@ Replicate.OnClientEvent:Connect(function(Skill)
 							Transparency = 1,
 							Size = Vector3.one
 						}):Play()
+						
+						Debris:AddItem(Rocks, 2)
 					end)
 				end)
-
-				Debris:AddItem(Rocks, 2)
+				
 				Debris:AddItem(GroundAtt, 2)
 
 				if x == Amount then
