@@ -199,11 +199,15 @@ end)
 -- Server --
 
 local RPS = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
 
+local Modules = RPS.Modules
 local Meshes = RPS.Meshes
 local Remotes = RPS.Remotes
 
 local Debounce = {}
+
+local Ragdoll = require(Modules.Ragdoll)
 
 Remotes.Replicate.OnServerEvent:Connect(function(Player, Skill)
 	assert(type(Skill) == "table", "Invalid Argument.")	
@@ -247,7 +251,24 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 				if v.Parent:FindFirstChildWhichIsA("Humanoid") and v.Parent:FindFirstChildWhichIsA("Humanoid").Health > 0 then
 					if Hits[v.Parent.Name] == nil then 
 						Hits[v.Parent.Name] = true
+						
+						local E_Humanoid, E_HRP = v.Parent.Humanoid, v.Parent.HumanoidRootPart
+						
 						v.Parent.Humanoid:TakeDamage(SmashDamage)
+						
+						local BV = Instance.new("BodyVelocity")
+						BV.Name = "KnockBack"
+						BV.MaxForce = Vector3.one * math.huge
+						BV.Velocity = E_HRP.CFrame.UpVector * 20 * Skill.Force + BV.Velocity + E_HRP.CFrame.LookVector * - 10 * Skill.Force 
+						
+						BV.Parent = E_HRP
+						
+						Ragdoll:TemporaryRagdoll(v.Parent, 2.5)
+						Debris:AddItem(BV, 0.1)
+						
+						local Stunned = Instance.new("BoolValue", E_HRP.Parent)
+						Stunned.Name = "Stunned"
+						Debris:AddItem(Stunned, 3)
 					end
 				end
 			end
