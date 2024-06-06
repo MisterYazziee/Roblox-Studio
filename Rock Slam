@@ -1,10 +1,12 @@
--- Client --
+-- Client -- // BY YAZZIEE / MISTERYAZZIEEE
 
 local UIS = game:GetService("UserInputService")
 local RPS = game:GetService("ReplicatedStorage")
 local PYS = game:GetService("PhysicsService")
 local TS = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
+
+-- SERVICES ARE DEFINED ABOVE ^^
 
 local Modules = RPS.Modules
 local Remotes = RPS.Remotes
@@ -33,12 +35,14 @@ local Amount = 28
 local Radius = 10
 local LifeTime = 2
 
+-- ^^ SETTINGS AND ANIMS OF ROCK FX ARE LISTED ABOVE
+
 local CC = workspace.CurrentCamera
 local CameraShaker = require(Modules.CameraShaker)
 
 local CamShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(ShakeCFrame)
-	CC.CFrame = CC.CFrame * ShakeCFrame
-end)
+	CC.CFrame = CC.CFrame * ShakeCFrame -- WE SET THE CURRENT CAMERA CFRAME TO ITS OWN CFRAME AND ADD IT BASED ON SHAKECFRAME
+end) -- THIS IS SLEITKNICKS CAMERA SHAKE MODULE
 
 local function XZAxis(Angle: number, Counter: number)
 	local x = math.cos(Angle) * Radius * Counter
@@ -47,40 +51,42 @@ local function XZAxis(Angle: number, Counter: number)
 	return x, z
 end
 
+-- IN THE XZAXIS FUNCTION ABOVE WE ARE RETURN TWO ANGLES, THE SIN AND THE COS, THESE TWO FORM A UNIT CIRCLE, IN RADIANS.
+
 local function SetCollision(Part: BasePart, Group: string)
-	Part.CollisionGroup = Group
+	Part.CollisionGroup = Group -- JUST CREATING A COLLISSION GROUP AND SETTING IT | WRAPPED IN A FUNCTION AS ITS CALLED MULTIPLE TIMES
 end
 
 local RCP = RaycastParams.new()
 RCP.FilterType = Enum.RaycastFilterType.Exclude
-RCP:AddToFilter(Character, workspace.Debris)
+RCP:AddToFilter(Character, workspace.Debris) -- WE DEFINE OUR RAYCAST PARAMS TO EXCLUDE OUR CHARACTER IN THE RAYCAST
 
-local ClientDebounce = false
+local ClientDebounce = false -- JUST A CLIENT SIDED DEBOUNCE
 
-UIS.InputBegan:Connect(function(UserInput, GPE)
+UIS.InputBegan:Connect(function(UserInput, GPE) -- A SIGNAL USED TO DETECT INPUT
 	if GPE then return end
 
-	if UserInput.KeyCode == Enum.KeyCode.E then
+	if UserInput.KeyCode == Enum.KeyCode.E then -- WHEN USER PRESSES E
 		if ClientDebounce then return end
 		ClientDebounce = true
 
-		Humanoid.AutoRotate = false
-		Humanoid.WalkSpeed = 0
-		Humanoid.JumpHeight = 0
+		Humanoid.AutoRotate = false -- STOP EM FROM ROTATING
+		Humanoid.WalkSpeed = 0 -- SELF EXPLANATOIRY
+		Humanoid.JumpHeight = 0 -- SELF EXPLANATORY
 
-		SmashAnimation:Play()
-		SmashAnimation:AdjustSpeed(0.01)
+		SmashAnimation:Play() -- PLAY ANIMATION
+		SmashAnimation:AdjustSpeed(0.01) -- SLOW DOWN ITS SPEED
 
 		local Charge = Effects.Charge:Clone()
-		Charge.Parent = HumanoidRootPart
+		Charge.Parent = HumanoidRootPart -- WE CLONE THE CHARGE FX AND PARENT IT TO THE HUMRP
 
 		repeat task.wait(0.025)
-			Counter += 0.1
-		until not UIS:IsKeyDown(Enum.KeyCode.E) or Counter >= MaxForce
-		SmashAnimation:AdjustSpeed(1.25)
-		Charge:Destroy()
+			Counter += 0.1 -- COUNTER GETS INCREMEMTED SO LONG AS THE CLIENT IS HOLDING THE E
+		until not UIS:IsKeyDown(Enum.KeyCode.E) or Counter >= MaxForce -- COUNTER WILL STOP INCREMENETING ONCE HTE CLIENT LETS GO OF E OR IS PASSED THE MAX FORCE
+		SmashAnimation:AdjustSpeed(1.25) -- INCREASE SMASH ANIM
+		Charge:Destroy() -- DESTROY CHARGE
 
-		if Counter <= 1 then
+		if Counter <= 1 then -- IF THE PLAYERS CHARGE UP WAS TOO WEAK, WE WILL CANCEL THE MOVE.
 			ClientDebounce = false
 
 			Humanoid.AutoRotate = true
@@ -90,89 +96,90 @@ UIS.InputBegan:Connect(function(UserInput, GPE)
 			return
 		end
 
-		Replicate:FireServer({SkillType = "Smash", Force = Counter})
+		Replicate:FireServer({SkillType = "Smash", Force = Counter}) -- FIRE TO THE SERVER AN ARRAY OF WHAT THE CLIENT IS TRYING TO DO IE, USE THE SMASH SKILL AND ITS FORCE COUNTER
 		print(Counter)
-		Counter = 0
+		Counter = 0 -- WE SET THE COUNTER BACK 0 SO THE CLIENT DOESNT REMAIN AT HTE MAX COUNTER EVERY TIME THEY PRESS E
 
 		task.wait(3)
-		ClientDebounce = false
+		ClientDebounce = false -- AFFTER A 3 SECOND COOLDOWN THE CLIENT IS ELIGIBLE TO USE THE SKILL AGAIN
 	end
 end)
 
-Replicate.OnClientEvent:Connect(function(Skill)
-	if Skill.SkillType == "Smash" then
+Replicate.OnClientEvent:Connect(function(Skill) -- THIS IS A SIGNAL AFTER FIRING ALL CLIENTS SO ALL CLIENTS CAN SEE
+	if Skill.SkillType == "Smash" then -- WE NEVER EVER EVER CODE THINGS SUCH AS ROCK FX IN SERVER VERY VERY BAD PRACTICE
 		local GroundAtt: Attachment = Effects.Ground.GroundAtt:Clone()
 
-		task.spawn(function()
-			for _ = 1,8 + Skill.Force do
-				local FlyingRock = Effects.FlyingRock:Clone()
+		task.spawn(function() -- CREATE  ANEW THREAD
+			for _ = 1,8 + Skill.Force do -- LOOP THROUGH 8 TIMES
+				local FlyingRock = Effects.FlyingRock:Clone() -- CLONE ROCK
 				FlyingRock.CanCollide = false
-				FlyingRock.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
-				FlyingRock.CFrame *= CFrame.Angles(0, math.rad(math.random(1, 6)), 0)
-				FlyingRock.Size = Vector3.new(Random.new():NextNumber(1.5, 2), Random.new():NextNumber(1.5, 2), Random.new():NextNumber(1.5, 2))
-				FlyingRock.Orientation = Vector3.new(math.random(-45, 45), 0, math.random(-45, 45))
-				FlyingRock.BrickColor = workspace.Debris:WaitForChild("Rocks").BrickColor
+				FlyingRock.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 3, 0) -- SET ITS CFRAME 3 STUDS ABOVE HUMRP CFRAME
+				FlyingRock.CFrame *= CFrame.Angles(0, math.rad(math.random(1, 6)), 0) -- WE SUPPLY EA ROCK A RANDOM ANGLE IN RADIANS RANGING FROM 1,6
+				FlyingRock.Size = Vector3.new(Random.new():NextNumber(1.5, 2), Random.new():NextNumber(1.5, 2), Random.new():NextNumber(1.5, 2)) -- RAND.NEW():nEXTNUMBER(X, Y) -- RETURNS A RANDOM NUMBER
+				FlyingRock.Orientation = Vector3.new(math.random(-45, 45), 0, math.random(-45, 45)) -- WE LATER ADJUST ITS ORIENTATION AGAIN THIS TIME ONLY ON THE X AND Z AXIST BY A LITTLE BIT
+				FlyingRock.BrickColor = workspace.Debris:WaitForChild("Rocks").BrickColor --WE SET THE COLOR OF THE FLYING ROCKS TO THE COILOR OF THE ROCKS DOWN BELOW 
 				FlyingRock.Material = workspace.Debris.Rocks.Material
 
 				FlyingRock.Parent = workspace.Debris
 
 				local BV = Instance.new("BodyVelocity")
-				BV.MaxForce = Vector3.new(1,1,1) * math.huge
+				BV.MaxForce = Vector3.new(1,1,1) * math.huge -- ADDS A VELKOCITY TO EACH ROCK
 
-				BV.Velocity = HumanoidRootPart.CFrame.UpVector * 40 + Vector3.new(math.random(-25, 25), 5, math.random(-25, 25)) * Skill.Force
+				BV.Velocity = HumanoidRootPart.CFrame.UpVector * 40 + Vector3.new(math.random(-25, 25), 5, math.random(-25, 25)) * Skill.Force -- SENDS THE ROCK FLYING UP AND RANDOMISED BY 25 STUDS ON X AND Y AXIS
 				BV.Parent = FlyingRock
 
 				task.delay(0.05, function()
-					FlyingRock.CanCollide = true
+					FlyingRock.CanCollide = true -- WE SET ITS COLISSION SO IT DOESNT FALL UNDER THE GROUND.
 				end)
 
-				local Debounce: {boolean} = {}
+				local Debounce: {boolean} = {} -- DEBOUNCE ARRAY WITH TYPE BOOLEAN INDICATING THIS TABLE WILL ONLY HAVE A LIST OF BOOLEANS
 
-				local Connection Connection = FlyingRock.Touched:Connect(function(Hit: Instance)
+				local Connection Connection = FlyingRock.Touched:Connect(function(Hit: Instance) -- A TOUCH DVENT TO DETECT IF FLYING ROCK HIT THE BASEPLATE
 					if Hit:IsDescendantOf(workspace) and Hit.Parent ~= Character and Hit.Parent ~= workspace.Debris and Hit.Name == "Baseplate" then
-						if Debounce[FlyingRock] ~= nil then return end
+						if Debounce[FlyingRock] ~= nil then return end -- RETURN IF IT ALREADY DID
 						Debounce[FlyingRock] = true
-						FlyingRock.Dust:Emit(FlyingRock.Dust:GetAttribute("EmitCount") * Skill.Force)	
+						FlyingRock.Dust:Emit(FlyingRock.Dust:GetAttribute("EmitCount") * Skill.Force) -- EMIT THE SKILL AND SCALE IT BASED OFF THE COUNTER FORCE	
 					end
 				end)
 
-				Debris:AddItem(BV, 0.1)
-				Debris:AddItem(FlyingRock, 1.5)
+				Debris:AddItem(BV, 0.1) -- DESTROY BV ALMOST INSTNATLY AS WE DONT WANT IT TO GO FLYING CRAZY
+				Debris:AddItem(FlyingRock, 1.5) -- LIFETIME DURATION OF FLYING ROCK
 
 				FlyingRock.Destroying:Once(function()
-					table.clear(Debounce)
-					Connection:Disconnect()
+					table.clear(Debounce) -- CLEAR DEBOUNCE
+					Connection:Disconnect() -- DISCONENCT THE CONNECTION!!! SAVES PERFORMANCE
 				end)	
 			end
 		end)
 
 		CamShake:Start()
-		CamShake:ShakeOnce(17.5, 15, 0.1, 0.75)
+		CamShake:ShakeOnce(17.5, 15, 0.1, 0.75) -- APPLY MAGNITUDE, ROUGHNESS MIN AND MAX TIME FOR CAM SHAKE
 		
-		SlamSound.Volume = 0 + Skill.Force / 3
+		SlamSound.Volume = 0 + Skill.Force / 3 -- INCRASE VOLUME
 		SlamSound:Play()
 
 		local Shockwave_1, Shockwave_2 = Effects.Shockwave_1:Clone(), Effects.Shockwave_2:Clone()
 		
-		Shockwave_1.CFrame, Shockwave_2.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, - 3, 0), HumanoidRootPart.CFrame * CFrame.new(0, - 3, 0)
+		Shockwave_1.CFrame, Shockwave_2.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, - 3, 0), HumanoidRootPart.CFrame * CFrame.new(0, - 3, 0) -- SETTS SHOCKWAVE 3 STUD BELOW HUYMRP
 		Shockwave_1.Parent, Shockwave_2.Parent = HumanoidRootPart, HumanoidRootPart
 
-		TS:Create(Shockwave_1, TweenInfo.new(0.5), {Transparency = 1}):Play()
+		TS:Create(Shockwave_1, TweenInfo.new(0.5), {Transparency = 1}):Play() -- TWEEN TRANSPARENCY SO ITS IN A SMOOTH WAY
 		TS:Create(Shockwave_2, TweenInfo.new(0.5), {Transparency = 1}):Play()
 		
 		task.delay(0.5, function()
 			Shockwave_1:Destroy() Shockwave_2:Destroy()
 		end)
 
-		for x = 1, Amount do
-			local Angle = x * (2 * math.pi / Amount)
-			local X,Z = XZAxis(Angle, Skill.Force)
+		for x = 1, Amount do -- LOOPING THROUGH THE AMOUNT
+			local Angle = x * (2 * math.pi / Amount) -- THE ANGLE IS THE CURRENT ITERATION MULTIPLIED BY 2 PI WHICH IS A FULL UNIT CIRCLE THEN WE DIVIDE BY THE AMOUNT TO GET A PERFECT CIRCLE
+			local X,Z = XZAxis(Angle, Skill.Force) -- WE CALL XZ AXIST AND APPLY THE ANGLE WITH ITS SKILL FORCE SO THE HIGHER UR SKILL FORCE THE FURTHER AWAY THE ROCKS FROM U
 
 			local Rocks = Effects.Rocks:Clone()
-			Rocks.CFrame = HumanoidRootPart.CFrame * CFrame.new(x%2 == 0 and X or X / 1.75, 0, x%2 == 0 and Z or Z / 1.75)
-			Rocks.Parent = workspace.Debris
+			Rocks.CFrame = HumanoidRootPart.CFrame * CFrame.new(x%2 == 0 and X or X / 1.75, 0, x%2 == 0 and Z or Z / 1.75) -- WE USE A TERNARY CONDITION HERE TO SAVE LINES
+			Rocks.Parent = workspace.Debris -- ^^ BASICALLY HALF OF THE ROCKS WLL  BE POSITIONED ON THE X ANGLE AND THE OTHER HALF WILL BE POSITION ON THE X ANGLE DIVIDIED BY 1.75 MAKING ANOTHER ROCK CIRCLE CLOSER.
 
-			local RC = workspace:Raycast(Rocks.CFrame.Position, Rocks.CFrame.UpVector * - 10, RCP)
+			local RC = workspace:Raycast(Rocks.CFrame.Position, Rocks.CFrame.UpVector * - 10, RCP) -- USE RAYCASTS IF IT DETECTS SMTH WE SPAWN THE ROCKS
+-- WE USE THE RAYCAST SO WE CAN ADD COLORS TO WHAT IT HIT AS WELL AS SYNCING IT WITH OUR MATERIALS
 
 			if RC then
 				if not HumanoidRootPart:FindFirstChild("GroundAtt") then
@@ -184,17 +191,17 @@ Replicate.OnClientEvent:Connect(function(Skill)
 				Rocks.BrickColor = RC.Instance.BrickColor
 				Rocks.Material = RC.Instance.Material
 
-				Rocks.CFrame = CFrame.new(Rocks.Position, HumanoidRootPart.Position)
+				Rocks.CFrame = CFrame.new(Rocks.Position, HumanoidRootPart.Position) -- MAKE ROCKS FACE HUMRP
 
 				local T1 = TS:Create(Rocks, TweenInfo.new(0.1), {
-					Position = Rocks.Position + Vector3.new(0, Random.new():NextNumber(0.35, 1), 0),
+					Position = Rocks.Position + Vector3.new(0, Random.new():NextNumber(0.35, 1), 0), --  WE TWEEN ROCK POSITION AT A RANDOM NUMBER BETWEEN 0.35 - 1
 					Transparency = 0,
 					Size = Vector3.new(Random.new():NextNumber(3, 3), Random.new():NextNumber(1.5, 2), Random.new():NextNumber(2, 3)),
-					["CFrame"] = Rocks.CFrame * CFrame.Angles(math.rad(math.random(-5, 5)), math.rad(math.random(-3.5, 3.5)), math.rad(-5, 5))
+					["CFrame"] = Rocks.CFrame * CFrame.Angles(math.rad(math.random(-5, 5)), math.rad(math.random(-3.5, 3.5)), math.rad(-5, 5)) -- rotate rocks agnle by a random amount in radians
 				})
 
 				T1:Play()
-
+-- play tween
 				local Debounce: {boolean} = {}
 
 				for _,v in GroundAtt:GetChildren() do
@@ -202,7 +209,7 @@ Replicate.OnClientEvent:Connect(function(Skill)
 						if Debounce[v] == true then return end
 						Debounce[v] = true
 
-						v:Emit(v:GetAttribute("EmitCount") / 30 * Skill.Force)
+						v:Emit(v:GetAttribute("EmitCount") / 30 * Skill.Force) -- loop through groundatt emit the particle emitter and multiply it baased on skill force
 					end
 				end
 
@@ -212,24 +219,25 @@ Replicate.OnClientEvent:Connect(function(Skill)
 							Position = Rocks.Position - Vector3.new(0, 3, 0),
 							Transparency = 1,
 							Size = Vector3.one
-						}):Play()
+						}):Play() -- when this tween completed the rocks position transparency and size will fade away
 						
-						Debris:AddItem(Rocks, 2)
+						Debris:AddItem(Rocks, 2) -- destroy rock after 2 sec
 					end)
 				end)
 				
 				Debris:AddItem(GroundAtt, 2)
 
 				if x == Amount then
-					Main:FireServer({SkillType = "Smash", Force = Skill.Force, Radius = X * 2})
+					Main:FireServer({SkillType = "Smash", Force = Skill.Force, Radius = X * 2}) -- at the end of the iteration we fire server in the server we  check to see if their were 
+					-- check to see if their were enemies within the radius of the rock, if their were we validate whether it was a player then damage them, ragdoll them and knockback them.
 				end
 			else
-				Rocks:Destroy()
+				Rocks:Destroy() -- destroy rock if no raycast found
 			end
 		end
-		Humanoid.AutoRotate = true
-		Humanoid.WalkSpeed = 16
-		Humanoid.JumpHeight = 7.2
+		Humanoid.AutoRotate = true -- allow rotation for humanoid
+		Humanoid.WalkSpeed = 16 -- self explanatoiry
+		Humanoid.JumpHeight = 7.2-- self explanatory
 	end
 end)
 
@@ -247,15 +255,15 @@ local Debounce = {}
 local Ragdoll = require(Modules.Ragdoll)
 
 Remotes.Replicate.OnServerEvent:Connect(function(Player, Skill)
-	assert(type(Skill) == "table", "Invalid Argument.")	
-	if Debounce[Player.UserId] ~= nil then return end
-	Debounce[Player.UserId] = true
+	assert(type(Skill) == "table", "Invalid Argument.")	-- assert is like a if statement except if not met, it returns an error based off its second argument
+	if Debounce[Player.UserId] ~= nil then return end 
+	Debounce[Player.UserId] = true -- apply debounce
 
-	Remotes.Replicate:FireAllClients(Skill)
+	Remotes.Replicate:FireAllClients(Skill) -- fire back to all cleints
 
 	task.wait(3)
 
-	table.clear(Debounce)
+	table.clear(Debounce) -- clear debounce after 3 seconds, serversided debounces are the way to go to prevent explotiers
 end)
 
 Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
@@ -265,12 +273,12 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 	local SmashDamage = 5 * Skill.Force
 	
 	if Skill.SkillType == "Smash" then
-		local SmashBox = Meshes.SmashBox:Clone()
+		local SmashBox = Meshes.SmashBox:Clone() -- make a hitbox
 		SmashBox.CanCollide = false
-		SmashBox.Position = HumanoidRootPart.Position + Vector3.new(0, - 2, 0)
+		SmashBox.Position = HumanoidRootPart.Position + Vector3.new(0, - 2, 0 ) -- position it ot char
 		SmashBox.Size = Vector3.new(0, Skill.Radius, Skill.Radius)
 
-		local WC = Instance.new("WeldConstraint")
+		local WC = Instance.new("WeldConstraint") -- weld hte hitbox to humrp
 		WC.Part0 = SmashBox
 		WC.Part1 = HumanoidRootPart
 		WC.Parent = WC.Part0
@@ -278,38 +286,39 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 		SmashBox.Parent = Character
 
 		local Connection Connection = SmashBox.Touched:Connect(function()
-			Connection:Disconnect()
+			Connection:Disconnect() -- disconnect so we get access to gettouching parts
 		end)
 
 		local Hits: {boolean} = {}
 
 		for _,v: BasePart in SmashBox:GetTouchingParts() do
 			if not v:IsDescendantOf(Character) then
-				if v.Parent:FindFirstChildWhichIsA("Humanoid") and v.Parent:FindFirstChildWhichIsA("Humanoid").Health > 0 then
+				if v.Parent:FindFirstChildWhichIsA("Humanoid") and v.Parent:FindFirstChildWhichIsA("Humanoid").Health > 0 then -- self expplanatory
 					if Hits[v.Parent.Name] == nil then 
-						Hits[v.Parent.Name] = true
+						Hits[v.Parent.Name] = true -- add the enbemy to the debounce table so we dont spam dmg him
 						
 						local Enemy = v.Parent
 						local E_Humanoid, E_HRP = Enemy.Humanoid, Enemy.HumanoidRootPart
 						
-						v.Parent.Humanoid:TakeDamage(SmashDamage)
+						v.Parent.Humanoid:TakeDamage(SmashDamage) -- self explanatory
 						
 						local BV = Instance.new("BodyVelocity")
 						BV.Name = "KnockBack"
 						BV.MaxForce = Vector3.one * math.huge
-						BV.Velocity = E_HRP.CFrame.UpVector * 20 * Skill.Force + BV.Velocity + E_HRP.CFrame.LookVector * - 10 * Skill.Force 
+						BV.Velocity = E_HRP.CFrame.UpVector * 20 * Skill.Force + BV.Velocity + E_HRP.CFrame.LookVector * - 10 * Skill.Force  
+						-- this velocity sends the enemy up by 20 studs multiplied by the skill force then sums up the current velocity, and sets them back 10 studs relative to skill force
 						
 						BV.Parent = E_HRP
 						
-						Ragdoll:TemporaryRagdoll(v.Parent, 2.5)
+						Ragdoll:TemporaryRagdoll(v.Parent, 2.5) -- this is ragdoll module i made in serverscript service 1st arg is the user to ragdoll, second arg is the duration of it
 						Debris:AddItem(BV, 0.1)
 						
 						local Stunned = Instance.new("BoolValue", E_HRP.Parent)
-						Stunned.Name = "Stunned"
-						Debris:AddItem(Stunned, 1 * Skill.Force)
+						Stunned.Name = "Stunned" --add a stun bool 
+						Debris:AddItem(Stunned, 1 * Skill.Force) --- destroy the stun bool after a second and amplified by how long the user held rock smash for
 						
 						Enemy.ChildAdded:Once(function(Object)
-							if Object.Name == "Stunned" then
+							if Object.Name == "Stunned" then -- self explanatroy
 								E_Humanoid.AutoRotate = false
 								E_Humanoid.WalkSpeed = 0
 								E_Humanoid.JumpHeight = 0
@@ -317,7 +326,7 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 						end)
 						
 						Enemy.ChildRemoved:Once(function(Object)
-							if Object.Name == "Stunned" then
+							if Object.Name == "Stunned" then -- self explanatory
 								E_Humanoid.AutoRotate = true
 								E_Humanoid.WalkSpeed = 16
 								E_Humanoid.JumpHeight = 7.2
@@ -327,7 +336,7 @@ Remotes.Main.OnServerEvent:Connect(function(Player, Skill)
 				end
 			end
 		end
-		SmashBox:Destroy()
-		table.clear(Hits)
+		SmashBox:Destroy() -- destroy smashboix
+		table.clear(Hits) -- clear debounce
 	end
 end)
