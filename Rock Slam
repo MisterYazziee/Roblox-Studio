@@ -1,4 +1,4 @@
--- Client -- // BY YAZZIEE / MISTERYAZZIEEE
+-- Client -- // BY yazbek._
 
 local UIS = game:GetService("UserInputService")
 local RPS = game:GetService("ReplicatedStorage")
